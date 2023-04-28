@@ -1,6 +1,9 @@
-import 'dart:convert';
+// ignore_for_file: avoid_print
+
+import 'package:collection_test/data/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:http/http.dart';
 
 void main() => runApp(const MyApp());
 
@@ -25,13 +28,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String _responseText = '';
-  final String baseUrl = 'https://jsonplaceholder.typicode.com';
+  final ApiClient apiClient = ApiClient(Dio());
 
-  Future<void> _getRequest() async {
+  Future<void> getPosts() async {
     try {
-      final response = await Dio().get('$baseUrl/posts');
+      final List<Post> posts = await apiClient.getPosts();
       setState(() {
-        _responseText = jsonEncode(response.data);
+        _responseText = _stringChange(posts);
         print(_responseText); // Print the response
       });
     } catch (error) {
@@ -41,16 +44,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _putRequest() async {
+  Future<void> postPost() async {
     try {
-      final response = await Dio().put(
-        '$baseUrl/posts/1',
-        data: jsonEncode(
-          <String, dynamic>{'title': 'foo', 'body': 'bar', 'userId': '1'},
-        ),
-      );
+      final Post post = await apiClient.createPost({
+        'title': 'foo',
+        'body': 'bar',
+        'userId': 1,
+      });
       setState(() {
-        _responseText = jsonEncode(response.data);
+        _responseText = _stringChange(post);
         print(_responseText); // Print the response
       });
     } catch (error) {
@@ -60,16 +62,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _makePostRequest() async {
+  Future<void> putPost() async {
     try {
-      final response = await Dio().post(
-        '$baseUrl/posts',
-        data: jsonEncode(
-          <String, dynamic>{'title': 'foo', 'body': 'bar', 'userId': '1'},
-        ),
-      );
+      final Post post = await apiClient.putPost(1, {'title': 'new title'});
       setState(() {
-        _responseText = jsonEncode(response.data);
+        _responseText = _stringChange(post);
         print(_responseText); // Print the response
       });
     } catch (error) {
@@ -79,11 +76,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _deleteRequest() async {
+  Future<void> patchPost(int postId) async {
     try {
-      final response = await Dio().delete('$baseUrl/posts/1');
+      final Post post = await apiClient.patchPost(postId, {
+        'title': 'updated title',
+        'body': 'updated body',
+        'userId': 1,
+      });
       setState(() {
-        _responseText = jsonEncode(response.data);
+        _responseText = _stringChange(post);
         print(_responseText); // Print the response
       });
     } catch (error) {
@@ -93,16 +94,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _patchRequest() async {
+  Future<void> deletePost() async {
     try {
-      final response = await Dio().patch(
-        '$baseUrl/posts/1',
-        data: jsonEncode(<String, dynamic>{
-          'title': 'new title',
-        }),
-      );
+      await apiClient.deletePost(1);
       setState(() {
-        _responseText = jsonEncode(response.data);
+        _responseText = 'Post deleted successfully';
         print(_responseText); // Print the response
       });
     } catch (error) {
@@ -110,10 +106,15 @@ class _MyHomePageState extends State<MyHomePage> {
         _responseText = 'Error: $error';
       });
     }
+  }
+
+  String _stringChange(dynamic value) {
+    return value.toString().replaceAll(',', ',\n');
   }
 
   @override
   Widget build(BuildContext context) {
+    int postId = 1;
     return Scaffold(
       appBar: AppBar(
         title: const Text('HTTP Requests Demo'),
@@ -139,15 +140,15 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: _getRequest,
+                  onPressed: getPosts,
                   child: const Text('GET'),
                 ),
                 ElevatedButton(
-                  onPressed: _putRequest,
+                  onPressed: putPost,
                   child: const Text('PUT'),
                 ),
                 ElevatedButton(
-                  onPressed: _makePostRequest,
+                  onPressed: postPost,
                   child: const Text('POST'),
                 ),
               ],
@@ -157,11 +158,11 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: _deleteRequest,
+                  onPressed: deletePost,
                   child: const Text('DELETE'),
                 ),
                 ElevatedButton(
-                  onPressed: _patchRequest,
+                  onPressed: () => patchPost(postId),
                   child: const Text('PATCH'),
                 ),
               ],
